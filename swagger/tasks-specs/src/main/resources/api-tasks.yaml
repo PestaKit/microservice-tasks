@@ -1,0 +1,260 @@
+swagger: '2.0'
+info:
+  title: AMT-TASKS API
+  description: api for porject AMT PestaKit microservice tasks 
+  version: "1.0.0"
+# array of all schemes that your API supports
+schemes:
+  - http
+  - https
+host: localhost:8080
+# will be prefixed to all paths
+basePath: /api
+produces:
+  - application/json
+paths:
+  /tasks:
+    get:
+      summary: getting all tasks
+      description: |
+        /tasks endpoint returns the list of all tasks we have in db
+      tags:
+        - Tasks
+      responses:
+        200:
+          description: An array of tasks
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/task'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post: 
+      description: create a task
+      operationId: createTask
+      consumes:
+        - application/json
+      parameters:
+        - name: nameTask
+          in: body
+          description: name of the task
+          required: true
+          schema:
+            $ref: '#/definitions/taskCreate'
+      tags:
+        - OneTask
+      responses:
+        '201':
+          description: task created
+        '400':
+          description: cannot create this task
+        '409':
+          description: this name is already use for a task
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /tasks/{numTask}:
+    get:
+      summary: one precise task
+      description: |
+        /tasks/{numTask} endpoint returns the selected task, we have to pass numTask, who is the number of the task
+      parameters:
+        - name: numTask
+          in: path
+          description: number of the task
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - OneTask
+      responses:
+        200:
+          description: the task n° "numTask"
+          schema:
+            $ref: '#/definitions/task'
+        404: 
+          description: the task n° "numTask" doesn't exist
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete: 
+      summary: deleting selected task
+      description: |
+        /tasks/{numTask} delete endpoint can delete the task n° numtask
+      parameters:
+        - name: numTask
+          in: path
+          description: number of the task
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - OneTask
+      responses:
+        200:
+          description: task deleted
+        404:
+          description: this task doesn't exist
+    
+  /tasks/{numTask}/stages/{numStage}:
+    get:
+      summary: getting a specific stage of a specific task
+      description: |
+        /tasks/{numTask}/stages/{numStage} endpoint returns a stage of wanted task
+      parameters:
+        - name: numTask
+          in: path
+          description: number of the task
+          required: true
+          type: integer
+          format: int64
+        - name: numStage
+          in: path
+          description: number of the stage 
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - OneStage
+      responses:
+        200:
+          description: a stage of a task
+          schema:
+            $ref: '#/definitions/stage'
+        404: 
+          description: the stage n° "numStage" of the task n° "numTask" doesn't exist 
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      summary: deleting selected stage of selected task
+      description: |
+       /tasks/{numTask}/stages/{numStage} endpoint let you delete the stage n° "numStage" of the task n° "numTask"
+      parameters:
+        - name: numTask
+          in: path
+          description: number of the task
+          required: true
+          type: integer
+          format: int64
+        - name: numStage
+          in: path
+          description: number of the stage 
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - OneStage
+      responses:
+        200:
+          description: OK
+    
+  /tasks/{numTask}/stages/:
+     get:
+      summary: getting all stages of a specific task
+      description: |
+        /tasks/{numTask}/stages/ endpoint returns all stages of wanted task
+      parameters:
+        - name: numTask
+          in: path
+          description: number of the task
+          required: true
+          type: integer
+          format: int64
+      tags:
+        - Stages
+      responses:
+        200:
+          description: all stages of a task
+          schema:
+            type: array
+            items:
+               $ref: '#/definitions/stage'
+        404:
+          description: the task n° "numtask", doesn't exist
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+     post: 
+      description: create a stage at given position. if this position is already given, we put it at the given position and we shift forward the next stages
+      operationId: createStage
+      consumes:
+        - application/json
+      parameters:
+        - name: stage
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/stage'
+        - name: numTask
+          in: path
+          required: true
+          type: integer
+          format: int64
+      tags: 
+       - OneStage
+      responses:
+        201:
+          description: stage created
+        404: 
+          description: the task n° "numtask", doesn't exist
+        409: 
+          description: there's already a stage with that name in the task
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+definitions:
+ task:
+    type: object
+    properties:
+      number:
+        type: number
+        description: number of the task
+      name:
+        type: string
+        description: name of the task
+      stages:
+        type: array
+        items:
+          $ref: '#/definitions/stage'
+        description: array of the stages of the task
+ taskCreate:
+    type: object
+    properties:
+      name:
+        type: string
+        description: name of the task
+      stages:
+        type: array
+        items:
+          $ref: '#/definitions/stage'
+        description: array of the stages of the task
+ stage:
+    type: object
+    properties:
+      position:
+        type: number
+        description: position of the stage in the task
+      name:
+        type: string
+        description: name of stage
+      value:
+        type: string
+        description: value of the stage
+ Error:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+      fields:
+        type: string
