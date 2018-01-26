@@ -3,7 +3,7 @@ services:
     mysql:
         build: ../docker-images/mysql
         environment:
-        - MYSQL_ROOT_PASSWORD=adminpw
+        - MYSQL_ROOT_PASSWORD=root
         ports:
         - "3306:3306"
     microservice-tasks:
