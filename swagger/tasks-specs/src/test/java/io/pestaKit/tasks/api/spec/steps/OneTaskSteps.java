@@ -1,14 +1,20 @@
 package io.pestaKit.tasks.api.spec.steps;
 
-import cucumber.api.java.en.And;
+import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
 import io.pestaKit.tasks.ApiException;
 import io.pestaKit.tasks.ApiResponse;
 import io.pestaKit.tasks.api.OneTaskApi;
+import io.pestaKit.tasks.api.TasksApi;
+import io.pestaKit.tasks.api.dto.Stage;
+import io.pestaKit.tasks.api.dto.Task;
 import io.pestaKit.tasks.api.dto.TaskCreate;
 import io.pestaKit.tasks.api.spec.helpers.Environment;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -20,17 +26,26 @@ public class OneTaskSteps {
 
     private Environment environment;
     private OneTaskApi api;
+    private TasksApi tasksApi;
 
-    TaskCreate task;
+    TaskCreate taskOne, taskTwo;
+    Stage stage;
 
     private ApiResponse lastApiResponse;
     private ApiException lastApiException;
+
     private boolean lastApiCallThrewException;
-    private int lastStatusCode;
+    private long lastNumTask, numTaskSecondTask;
+
+    private final String NAMETASKONE  = "task one";
+    private final String NAMETASKTWO  = "task two";
+    private final String NAMESTAGEONE = "stage one";
+    private final String NAMESTAGETWO = "stage two";
 
     public OneTaskSteps(Environment environment) {
         this.environment = environment;
         this.api = environment.getOneTaskApi();
+        this.tasksApi = environment.getTasksApi();
     }
 
     @Given("^there is a Tasks server$")
@@ -38,52 +53,118 @@ public class OneTaskSteps {
         assertNotNull(api);
     }
 
-    @Given("^I have a task payload$")
-    public void i_have_a_task_payload() throws Throwable {
-        task = new io.pestaKit.tasks.api.dto.TaskCreate();
-        task.setName("task one");
+    @Given("^I have a Task$")
+    public void i_have_a_task() throws Throwable {
+        taskOne = new io.pestaKit.tasks.api.dto.TaskCreate();
+        taskOne.setName(NAMETASKONE);
+
+        postTask(taskOne);
+
+        lastNumTask = tasksApi.tasksGet().get(0).getNumber().intValue();
     }
 
-    @When("^I POST it to the /tasks endpoint$")
-    public void i_POST_it_to_the_tasks_endpoint() throws Throwable {
-        try {
-            lastApiResponse = api.createTaskWithHttpInfo(task);
-            lastApiCallThrewException = false;
-            lastApiException = null;
-            lastStatusCode = lastApiResponse.getStatusCode();
-        } catch (ApiException e) {
-            lastApiCallThrewException = true;
-            lastApiResponse = null;
-            lastApiException = e;
-            lastStatusCode = lastApiException.getCode();
-        }
+    @Given("^I have a Task payload$")
+    public void i_have_a_task_payload() throws Throwable {
+        taskTwo = new io.pestaKit.tasks.api.dto.TaskCreate();
+        taskTwo.setName(NAMETASKTWO);
+    }
+    @Given("^I have a Stage Payload$")
+    public void i_have_a_stage_payload() throws Throwable {
+        stage = new Stage();
+        stage.setName(NAMESTAGEONE);
+        stage.setPosition(BigDecimal.valueOf(0));
+        stage.setValue("valueOfStageOne");
 
+    }
+
+    @When("^I POST a correct Task payload to the /tasks endpoint$")
+    public void i_POST_a_correct_task_payload_to_the_tasks_endpoint() throws Throwable {
+        postTask(taskTwo);
+        numTaskSecondTask = 2;
+    }
+
+    @When("^I POST a correct Task payload but with already used name to the /tasks endpoint$")
+    public void i_POST_a_correct_task_payload_but_with_already_used_name_to_the_tasks_endpoint() throws Throwable {
+        postTask(taskOne);
     }
 
     @Then("^I receive a (\\d+) status code$")
     public void i_receive_a_status_code(int arg1) throws Throwable {
-        assertEquals(201, lastStatusCode);
+        assertEquals(arg1, environment.lastStatusCode);
     }
-    @And("^I GET the endpoint /tasks/1 and  verify if it is not empty and that is name is 'task one'$")
-    public void i_get_the_endpoint_tasks_1_verify_is_not_empty_and_name_is_task_one() throws Throwable {
-        assertEquals(200, api.tasksNumTaskGetWithHttpInfo((long)1).getStatusCode());
-        assertEquals("task one", api.tasksNumTaskGetWithHttpInfo((long)1).getData().getName());
-    }
-    @And("^I DELETE the endpoint /tasks/1 and verify if it is deleted$")
-    public void i_delete_the_endpoint_task_1_and_verify_if_deleted() throws Throwable {
-        assertEquals(201, api.tasksNumTaskDeleteWithHttpInfo((long)1).getStatusCode());
-
+    @When("^I GET an existing Task with  /tasks/numTask endpoint$")
+    public void i_get_an_existing_task_with_tasks_numTask_endpoint() throws Throwable {
         try {
-            lastApiResponse = api.tasksNumTaskGetWithHttpInfo((long)1);
+            lastApiResponse = api.tasksNumTaskGetWithHttpInfo(lastNumTask);
             lastApiCallThrewException = false;
             lastApiException = null;
-            lastStatusCode = lastApiResponse.getStatusCode();
+            environment.lastStatusCode = lastApiResponse.getStatusCode();
+
         } catch (ApiException e) {
             lastApiCallThrewException = true;
             lastApiResponse = null;
             lastApiException = e;
-            lastStatusCode = lastApiException.getCode();
+            environment.lastStatusCode = lastApiException.getCode();
         }
-        assertEquals(404, lastStatusCode);
     }
+    @When("^I GET an non-existent Task with  /tasks/numTask endpoint$")
+    public void i_get_an_non_existent_task_with_tasks_numTask_endpoint() throws Throwable {
+       lastNumTask = lastNumTask+100;
+       i_get_an_existing_task_with_tasks_numTask_endpoint();
+       lastNumTask = 1;
+    }
+
+    @When("^I DELETE an existent Task in /tasks/numTask endpoint$")
+    public void i_delete_an_existent_task_in_tasks_numTask_endpoint() throws Throwable {
+        try {
+            lastApiResponse = api.tasksNumTaskDeleteWithHttpInfo(lastNumTask);
+            lastApiCallThrewException = false;
+            lastApiException = null;
+            environment.lastStatusCode = lastApiResponse.getStatusCode();
+        } catch (ApiException e) {
+            lastApiCallThrewException = true;
+            lastApiResponse = null;
+            lastApiException = e;
+            environment.lastStatusCode = lastApiException.getCode();
+        }
+    }
+
+    @When("^I DELETE a non-existent Task in /tasks/numTask endpoint$")
+    public void i_delete_a_non_existent_task_in_tasks_numTask_endpoint() throws Throwable {
+        lastNumTask = 10;
+        i_delete_an_existent_task_in_tasks_numTask_endpoint();
+        lastNumTask = 1;
+    }
+
+    @When("^I GET a deleted Task with  /tasks/numTask endpoint$")
+    public void i_get_a_deleted_task_with_tasks_numTask_endpoint() throws Throwable {
+        lastNumTask = numTaskSecondTask;
+        i_get_an_existing_task_with_tasks_numTask_endpoint();
+    }
+
+    @After
+    public void deleteBD() throws ApiException {
+        List<Task> tasks = tasksApi.tasksGet();
+        for(int i = 0; i < tasks.size(); i++)
+        {
+            api.tasksNumTaskDelete(tasks.get(i).getNumber().longValue());
+        }
+    }
+
+    private void postTask(TaskCreate currTask)
+    {
+        try {
+            lastApiResponse = api.createTaskWithHttpInfo(currTask);
+            lastApiCallThrewException = false;
+            lastApiException = null;
+            environment.lastStatusCode = lastApiResponse.getStatusCode();
+
+        } catch (ApiException e) {
+            lastApiCallThrewException = true;
+            lastApiResponse = null;
+            lastApiException = e;
+            environment.lastStatusCode = lastApiException.getCode();
+        }
+    }
+
 }

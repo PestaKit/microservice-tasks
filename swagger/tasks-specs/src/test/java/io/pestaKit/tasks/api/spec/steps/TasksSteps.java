@@ -32,31 +32,35 @@ public class TasksSteps {
     private boolean lastApiCallThrewException;
     private int lastStatusCode;
 
+    private String NAMEOFTASKONE = "task T1";
+    private String NAMEOFTASKTWO = "task T2";
+    private String NAMEOFTASKTHREE = "task T3";
+
+
     public TasksSteps(Environment environment) {
         this.environment = environment;
         this.api = environment.getTasksApi();
     }
 
-    @Given("^I have 3 tasks payload$")
+    @Given("^I have 3 tasks$")
     public void i_have_3_task_payload() throws Throwable {
         task1 = new TaskCreate();
-        task1.setName("task T1");
+        task1.setName(NAMEOFTASKONE);
 
         task2 = new TaskCreate();
-        task2.setName("task T2");
+        task2.setName(NAMEOFTASKTWO);
 
         task3 = new TaskCreate();
-        task3.setName("task T3");
+        task3.setName(NAMEOFTASKTHREE);
 
         taskApi = environment.getOneTaskApi();
         taskApi.createTaskWithHttpInfo(task1);
         taskApi.createTaskWithHttpInfo(task2);
         taskApi.createTaskWithHttpInfo(task3);
     }
+
     @When("^I GET the list of Tasks")
     public void i_get_the_list_of_tasks() throws Throwable {
-
-
         try {
             lastApiResponse = api.tasksGetWithHttpInfo();
             lastApiCallThrewException = false;
@@ -68,19 +72,21 @@ public class TasksSteps {
             lastApiException = e;
             lastStatusCode = lastApiException.getCode();
         }
+    }
 
-    }
-    @Then("^I receive a (\\d+) status code for getting list of Tasks$")
-    public void i_receive_a_status_code_for_getting_list_tasks(int arg1) throws Throwable {
-        assertEquals(200, lastStatusCode);
-    }
-    @And("^the list contains the good tasks$")
-    public void the_list_contains_good_tasks() throws Throwable {
+    @Then("^the list of tasks has the good size$")
+    public void the_list_tasks_has_good_size() throws Throwable {
         List<Task> tasksList = (List<Task>) lastApiResponse.getData();
 
-        assertEquals("task T1", tasksList.get(1).getName());
-        assertEquals("task T2", tasksList.get(2).getName());
-        assertEquals("task T3", tasksList.get(3).getName());
+        assertEquals(3, tasksList.size());
     }
 
+    @And("^the list of tasks has the good values$")
+    public void the_list_tasks_has_good_values() throws Throwable {
+        List<Task> tasksList = (List<Task>) lastApiResponse.getData();
+
+        assertEquals(NAMEOFTASKONE, tasksList.get(0).getName());
+        assertEquals(NAMEOFTASKTWO, tasksList.get(1).getName());
+        assertEquals(NAMEOFTASKTHREE, tasksList.get(2).getName());
+    }
 }

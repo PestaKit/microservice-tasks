@@ -1,6 +1,5 @@
 package io.pestaKit.tasks.api.spec.steps;
 
-import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
@@ -9,6 +8,7 @@ import io.pestaKit.tasks.ApiResponse;
 import io.pestaKit.tasks.api.OneStageApi;
 import io.pestaKit.tasks.api.OneTaskApi;
 import io.pestaKit.tasks.api.StagesApi;
+import io.pestaKit.tasks.api.TasksApi;
 import io.pestaKit.tasks.api.dto.Stage;
 import io.pestaKit.tasks.api.dto.TaskCreate;
 import io.pestaKit.tasks.api.spec.helpers.Environment;
@@ -26,6 +26,7 @@ public class StagesSteps {
     private Environment environment;
     private StagesApi api;
     private OneStageApi oneStageApi;
+    private TasksApi tasksApi;
     private OneTaskApi oneTaskApi;
 
     private Stage stage1, stage2, stage3;
@@ -34,10 +35,13 @@ public class StagesSteps {
     private ApiException lastApiException;
     private boolean lastApiCallThrewException;
     private int lastStatusCode;
+    private long lastNumTask;
 
     public StagesSteps(Environment environment) {
         this.environment = environment;
         this.api = environment.getStagesApi();
+        tasksApi = environment.getTasksApi();
+        oneTaskApi = environment.getOneTaskApi();
     }
 
     @Given("^I have 3 Stages on a Task$")
@@ -65,17 +69,18 @@ public class StagesSteps {
         task.setName("Task S1");
         oneTaskApi = environment.getOneTaskApi();
         oneTaskApi.createTaskWithHttpInfo(task);
+        lastNumTask = tasksApi.tasksGet().get(0).getNumber().intValue();
 
         oneStageApi = environment.getOneStageApi();
-        oneStageApi.createStage(stage1, (long)6);
-        oneStageApi.createStage(stage2, (long)6);
-        oneStageApi.createStage(stage3, (long)6);
+        oneStageApi.createStage(stage1, lastNumTask);
+        oneStageApi.createStage(stage2, lastNumTask);
+        oneStageApi.createStage(stage3, lastNumTask);
     }
 
-    @When("^I GET the list of stages with /tasks/1/stages endpoint$")
-    public void i_get_list_of_stages_with_1_stages_endpoint() throws Throwable {
+    @When("^I GET the list of stages with /tasks/numTask/stages endpoint$")
+    public void i_get_list_of_stages_with_tasks_numTask_stages_endpoint() throws Throwable {
         try {
-            lastApiResponse = api.tasksNumTaskStagesGetWithHttpInfo((long)6);
+            lastApiResponse = api.tasksNumTaskStagesGetWithHttpInfo(lastNumTask);
             lastApiCallThrewException = false;
             lastApiException = null;
             lastStatusCode = lastApiResponse.getStatusCode();
@@ -86,12 +91,9 @@ public class StagesSteps {
             lastStatusCode = lastApiException.getCode();
         }
     }
-    @Then("^I receive a (\\d+) status code for getting Stages$")
-    public void i_receive_a_status_code_for_getting_stages(int arg1) throws Throwable {
-        assertEquals(200, lastStatusCode);
-    }
-    @And("^the list has the good size$")
-    public void the_list_has_the_good_size() throws Throwable {
+
+    @Then("^the list of Stages has the good size$")
+    public void the_list_of_stages_has_the_good_size() throws Throwable {
         List<Stage> stages = (List<Stage>) lastApiResponse.getData();
         assertEquals(3, stages.size());
     }

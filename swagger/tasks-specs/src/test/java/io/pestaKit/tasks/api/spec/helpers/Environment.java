@@ -13,6 +13,11 @@ public class Environment {
     private StagesApi stagesApi     = new StagesApi();
     private TasksApi tasksApi       = new TasksApi();
 
+    private String lastTaskName;
+    private String lastStageName;
+
+    public int lastStatusCode;
+
     public Environment() throws IOException {
         Properties properties = new Properties();
         properties.load(this.getClass().getClassLoader().getResourceAsStream("environment.properties"));
@@ -34,5 +39,21 @@ public class Environment {
 
     public StagesApi getStagesApi() {
         return stagesApi;
+    }
+
+    public void setLastStageName(String lastStageName) {
+        this.lastStageName = lastStageName;
+    }
+
+    public void setLastTaskName(String lastTaskName) {
+        this.lastTaskName = lastTaskName;
+    }
+
+    public String getLastStageName() {
+        return lastStageName;
+    }
+
+    public String getLastTaskName() {
+        return lastTaskName;
     }
 }
